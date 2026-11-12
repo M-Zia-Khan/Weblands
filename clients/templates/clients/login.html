@@ -1,0 +1,18 @@
+{% extends "clients/base.html" %}
+{% block title %}Client login · Website Health Check{% endblock %}
+{% block content %}
+<section class="card" style="max-width: 480px; margin: 8vh auto;">
+  <h1>Client login</h1>
+  <p class="muted">Sign in to check the websites assigned to your account.</p>
+  {% if form.errors %}<p class="error">Username or password is incorrect. Try again.</p>{% endif %}
+  <form method="post">
+    {% csrf_token %}
+    <label for="{{ form.username.id_for_label }}">Username</label>
+    {{ form.username }}
+    <label for="{{ form.password.id_for_label }}">Password</label>
+    {{ form.password }}
+    <input type="hidden" name="next" value="{{ next }}">
+    <p><button type="submit">Log in</button></p>
+  </form>
+</section>
+{% endblock %}

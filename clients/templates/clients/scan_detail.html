@@ -1,0 +1,89 @@
+{% extends "clients/base.html" %}
+{% block title %}Check results · Website Health Check{% endblock %}
+{% block content %}
+<p><a href="{% url 'dashboard' %}">← Back to dashboard</a></p>
+<h1>Check results</h1>
+<p class="muted">{{ scan.target }} · {{ scan.created_at|date:"Y-m-d H:i" }} UTC</p>
+
+{% if scan.status == "failed" %}
+  <section class="card"><p class="error">{{ scan.error_message }}</p></section>
+{% elif scan.status == "running" %}
+  <section class="card"><p>Check is running.</p></section>
+{% else %}
+  <section class="card">
+    <div class="row">
+      <div class="metric"><strong>{{ summary.total }}</strong><span>Pages checked</span></div>
+      <div class="metric"><strong>{{ summary.up }}</strong><span>Available</span></div>
+      <div class="metric"><strong>{{ summary.down }}</strong><span>Down</span></div>
+      <div class="metric"><strong>{{ summary.other }}</strong><span>Inconclusive / blocked</span></div>
+    </div>
+    <p style="display:flex;gap:.7rem;flex-wrap:wrap;margin-top:1.2rem">
+      <a class="button" href="{% url 'download_report' scan.pk %}">Download client report</a>
+      <a class="button" href="{% url 'download_results' scan.pk %}">Download results CSV</a>
+    </p>
+    <p class="muted">Passive checks only; this is not a penetration test. An inconclusive response does not prove a site is down.</p>
+  </section>
+
+  {% if scan.host_security %}
+    <section class="card">
+      <h2>Site-level security checks</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Website</th><th>TLS</th><th>security.txt</th><th>HTTP redirect</th></tr></thead>
+          <tbody>
+            {% for hostname, checks in scan.host_security.items %}
+              <tr>
+                <td>{{ hostname }}</td>
+                <td>{% if checks.tls.days_left != None %}Certificate valid until {{ checks.tls.not_after }} ({{ checks.tls.days_left }} days){% else %}{{ checks.tls.error|default:"Not checked" }}{% endif %}</td>
+                <td>{{ checks.security_txt }}{% if checks.security_txt_note %} — {{ checks.security_txt_note }}{% endif %}</td>
+                <td>{{ checks.redirect.detail|default:"Not checked" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% endif %}
+
+  <section class="card">
+    <h2>Passive security findings</h2>
+    {% if findings %}
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Severity</th><th>Finding</th><th>Recommendation</th></tr></thead>
+          <tbody>
+            {% for finding in findings %}
+              <tr><td>{{ finding.severity }}</td><td>{{ finding.title }}</td><td>{{ finding.fix }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p>No findings were recorded by the passive checks. This is not a guarantee of security.</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <h2>Page results</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>URL</th><th>Status</th><th>HTTP</th><th>Time</th><th>Passive security</th><th>Details</th></tr></thead>
+        <tbody>
+          {% for row in results %}
+            <tr>
+              <td>{{ row.URL }}</td>
+              <td class="status {% if row.Status == 'Up' %}status-up{% elif row.Status == 'Down' %}status-down{% else %}status-other{% endif %}">{{ row.Status }}</td>
+              <td>{{ row.status_code|default:"—" }}</td>
+              <td>{{ row.response_time|default:"—" }}</td>
+              <td>{{ row.security_analysis|default:"—" }}</td>
+              <td>{{ row.Error|default:"—" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6">No pages were checked.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endif %}
+{% endblock %}

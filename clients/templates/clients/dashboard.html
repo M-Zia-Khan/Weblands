@@ -1,0 +1,55 @@
+{% extends "clients/base.html" %}
+{% block title %}Dashboard · Website Health Check{% endblock %}
+{% block content %}
+<h1>Website health dashboard</h1>
+<p class="muted">Run bounded availability and passive security checks for an assigned public website.</p>
+
+<section class="card">
+  <h2>Websites assigned to your account</h2>
+  {% if hosts %}
+    <ul>{% for host in hosts %}<li>{{ host.hostname }}</li>{% endfor %}</ul>
+  {% else %}
+    <p>No websites are assigned yet. Contact your administrator.</p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>Start a check</h2>
+  <p class="muted">A check follows same-host links one level deep (up to 25 pages per site). Private addresses, other domains and out-of-scope redirects are blocked.</p>
+  <form method="post" action="{% url 'start_scan' %}" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="error">{{ form.non_field_errors }}</div>{% endif %}
+    <label>Input</label>
+    {{ form.scan_type }}
+    <label for="{{ form.website_url.id_for_label }}">Website URL (for single-site checks)</label>
+    {{ form.website_url }}{{ form.website_url.errors }}
+    <label for="{{ form.csv_file.id_for_label }}">CSV file (up to 5 assigned website URLs)</label>
+    {{ form.csv_file }}{{ form.csv_file.errors }}
+    <p><button type="submit" {% if not hosts %}disabled{% endif %}>Run availability and passive security check</button></p>
+  </form>
+  <small>CSV files should have a column named url, website, link, address, or site. If no recognized header exists, the first column is used.</small>
+</section>
+
+<section class="card">
+  <h2>Recent checks</h2>
+  {% if scans %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Website</th><th>Status</th><th>Started</th><th></th></tr></thead>
+        <tbody>
+          {% for scan in scans %}
+            <tr>
+              <td>{{ scan.target }}</td>
+              <td>{{ scan.get_status_display }}{% if scan.error_message %}<br><small>{{ scan.error_message }}</small>{% endif %}</td>
+              <td>{{ scan.created_at|date:"Y-m-d H:i" }} UTC</td>
+              <td><a href="{% url 'scan_detail' scan.pk %}">View</a></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">No checks have been run yet.</p>
+  {% endif %}
+</section>
+{% endblock %}
