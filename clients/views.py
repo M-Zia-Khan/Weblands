@@ -8,12 +8,27 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 import checker_engine as engine
-from .forms import ScanForm
+from .forms import ClientSignUpForm, ScanForm
 from .models import AllowedHost, ScanRun
 from .scan_service import _csv_urls, run_scan
 
 
 logger = logging.getLogger(__name__)
+
+
+def register(request):
+    if request.user.is_authenticated:
+        return redirect("dashboard")
+
+    form = ClientSignUpForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(
+            request,
+            "Your account has been created. Sign in after an administrator assigns websites to it.",
+        )
+        return redirect("login")
+    return render(request, "clients/register.html", {"form": form})
 
 
 @login_required

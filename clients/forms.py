@@ -1,4 +1,42 @@
 from django import forms
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth.models import User
+
+
+class ClientAuthenticationForm(AuthenticationForm):
+    username = forms.CharField(
+        label="Email address or username",
+        widget=forms.TextInput(attrs={"autocomplete": "username"}),
+    )
+
+    def clean_username(self):
+        username = self.cleaned_data["username"]
+        return username.lower() if "@" in username else username
+
+
+class ClientSignUpForm(UserCreationForm):
+    username = forms.EmailField(
+        label="Email address",
+        max_length=150,
+        widget=forms.EmailInput(attrs={"autocomplete": "email"}),
+    )
+
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = ("username",)
+
+    def clean_username(self):
+        email = super().clean_username().strip().lower()
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError("An account with this email address already exists.")
+        return email
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.email = self.cleaned_data["username"]
+        if commit:
+            user.save()
+        return user
 
 
 class ScanForm(forms.Form):

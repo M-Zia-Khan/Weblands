@@ -26,6 +26,63 @@ class ClientPortalTests(TestCase):
         response = self.client.get(reverse("dashboard"))
         self.assertRedirects(response, f"{reverse('login')}?next={reverse('dashboard')}")
 
+    def test_registration_creates_email_account_with_hashed_password(self):
+        response = self.client.post(
+            reverse("register"),
+            {
+                "username": "New.Client@Example.com",
+                "password1": "a-very-long-unique-password-9284",
+                "password2": "a-very-long-unique-password-9284",
+            },
+        )
+
+        self.assertRedirects(response, reverse("login"))
+        user = User.objects.get(username="new.client@example.com")
+        self.assertEqual(user.email, "new.client@example.com")
+        self.assertTrue(user.check_password("a-very-long-unique-password-9284"))
+        self.assertNotEqual(user.password, "a-very-long-unique-password-9284")
+        self.assertFalse(AllowedHost.objects.filter(user=user).exists())
+        response = self.client.post(
+            reverse("login"),
+            {
+                "username": "NEW.CLIENT@EXAMPLE.COM",
+                "password": "a-very-long-unique-password-9284",
+            },
+        )
+        self.assertRedirects(response, reverse("dashboard"))
+
+    def test_registration_rejects_duplicate_email_case_insensitively(self):
+        User.objects.create_user(
+            username="existing-client",
+            email="client@example.com",
+            password="correct-horse",
+        )
+
+        response = self.client.post(
+            reverse("register"),
+            {
+                "username": "CLIENT@example.com",
+                "password1": "a-very-long-unique-password-9284",
+                "password2": "a-very-long-unique-password-9284",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(User.objects.filter(email__iexact="client@example.com").count(), 1)
+
+    def test_registration_uses_configured_password_validators(self):
+        response = self.client.post(
+            reverse("register"),
+            {
+                "username": "new-client@example.com",
+                "password1": "NotCommon1!",
+                "password2": "NotCommon1!",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(User.objects.filter(username="new-client@example.com").exists())
+
     def test_login_dashboard_shows_only_assigned_hosts(self):
         self.assertTrue(self.client.login(username="client-a", password="correct-horse"))
         response = self.client.get(reverse("dashboard"))

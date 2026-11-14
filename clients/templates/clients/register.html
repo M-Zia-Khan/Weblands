@@ -1,0 +1,19 @@
+{% extends "clients/base.html" %}
+{% block title %}Create account · Website Health Check{% endblock %}
+{% block content %}
+<section class="card" style="max-width: 480px; margin: 8vh auto;">
+  <h1>Create a client account</h1>
+  <p class="muted">An administrator must assign websites before you can run checks.</p>
+  <form method="post">
+    {% csrf_token %}
+    {% for field in form %}
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field }}
+      {% if field.help_text %}<small>{{ field.help_text|safe }}</small>{% endif %}
+      {{ field.errors }}
+    {% endfor %}
+    <p><button type="submit">Create account</button></p>
+  </form>
+  <p>Already have an account? <a href="{% url 'login' %}">Log in</a></p>
+</section>
+{% endblock %}

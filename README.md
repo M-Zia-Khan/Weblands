@@ -15,7 +15,7 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-Open `http://127.0.0.1:8000/admin/`, sign in as the administrator, create each client as a Django user, and add that user's assigned hostnames under **Allowed hosts**. Clients sign in at `http://127.0.0.1:8000/login/`. The `www.` prefix is normalized; subdomains and other hostnames must be assigned explicitly.
+Clients can create an account at `http://127.0.0.1:8000/register/` using an email address and password, then sign in at `http://127.0.0.1:8000/login/`. Passwords must be at least 12 characters, pass Django's configured password validators, and are stored using Django's password hashing. Registration does not grant website access: an administrator must verify the client's identity before signing in at `http://127.0.0.1:8000/admin/` and adding their assigned hostnames under **Allowed hosts**. Email ownership is not automatically verified. The `www.` prefix is normalized; subdomains and other hostnames must be assigned explicitly. Administrators may continue creating client accounts directly.
 
 ## Client checks and scope
 
@@ -27,7 +27,7 @@ Open `http://127.0.0.1:8000/admin/`, sign in as the administrator, create each c
 
 ## Production deployment
 
-Set `DJANGO_SECRET_KEY` to a unique secret, `DJANGO_ALLOWED_HOSTS` to the portal's hostnames, and keep `DJANGO_DEBUG=false`. Use HTTPS, a production WSGI/ASGI server, a production database, backups, and network egress controls. If TLS terminates at a reverse proxy, set `DJANGO_TRUST_PROXY_SSL_HEADER=true` only when that trusted proxy removes client-supplied forwarding headers and sets `X-Forwarded-Proto` itself. Set `DJANGO_CSRF_TRUSTED_ORIGINS` when the portal needs explicit trusted origins. Protect login endpoints with rate limiting at the reverse proxy.
+Set `DJANGO_SECRET_KEY` to a unique secret, `DJANGO_ALLOWED_HOSTS` to the portal's hostnames, and keep `DJANGO_DEBUG=false`. Use HTTPS, a production WSGI/ASGI server, a production database, backups, and network egress controls. If TLS terminates at a reverse proxy, set `DJANGO_TRUST_PROXY_SSL_HEADER=true` only when that trusted proxy removes client-supplied forwarding headers and sets `X-Forwarded-Proto` itself. Set `DJANGO_CSRF_TRUSTED_ORIGINS` when the portal needs explicit trusted origins. Protect registration and login endpoints with rate limiting at the reverse proxy.
 
 Scans currently run synchronously in the web request, with strict page, request, and time caps. This is appropriate for a small pilot; for a larger client rollout, move scan execution to a supervised background queue (for example Celery) before scaling web workers. Keep the existing host allowlist checks in the worker.
 
